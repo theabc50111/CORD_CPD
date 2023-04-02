@@ -152,13 +152,15 @@ def load_file(path, mode='train'):
 
 def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
     modes = ["train", "valid", "test"]
-    # data [feature, change_point, edge1, edge2]
+    # data [feature, change_point, edge]
     train, valid, test = [load_file(path, mode) for mode in modes]
     print("!"*100)
-    print(f"cp_fea.shape: {train[0].shape}, cp.shape: {train[1].shape}, cp_edges.shape: {train[2].shape}")
+    print(f"tr_cp_fea.shape: {train[0].shape}, tr_cp.shape: {train[1].shape}, tr_cp_edges.shape: {train[2].shape}")
+    print(f"val_cp_fea.shape: {valid[0].shape}, val_cp.shape: {valid[1].shape}, val_cp_edges.shape: {valid[2].shape}")
+    print(f"tt_cp_fea.shape: {test[0].shape}, t_cp.shape: {test[1].shape}, tt_cp_edges.shape: {test[2].shape}")
 
     # normalize feature
-    # train [feature, change_point, edges, edges2]
+    # train [feature, change_point, edge]
     # train_fea [batch, time_step, dim, num_var]
     if data_norm == 'min_max':
         train_fea, valid_fea, test_fea = min_max_transform(train[0], valid[0], test[0])
@@ -166,7 +168,6 @@ def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
         train_fea, valid_fea, test_fea = mean_std_transform(train[0], valid[0], test[0])
     train_fea, valid_fea, test_fea = [o.transpose(0, 3, 1, 2) for o in [train_fea, valid_fea, test_fea]]
     # train_fea [batch, num_var, time_steps, dim]
-    print(f"train_fea.shape: {train_fea.shape}")
 
     # process edge data to be edge connection per time step
     batch, num_var, time_steps, dim = train_fea.shape
@@ -174,12 +175,13 @@ def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
     train_edge = train[2].reshape(-1, time_steps, num_var*num_var)
     valid_edge = valid[2].reshape(-1, time_steps, num_var*num_var)
     test_edge = test[2].reshape(-1, time_steps, num_var*num_var)
-    print(f"train_fea.shape: {train_fea.shape}, train_edge.shape: {train_edge.shape}")
 
     train_fea, valid_fea, test_fea = [torch.FloatTensor(o) for o in [train_fea, valid_fea, test_fea]]
     train_edge, valid_edge, test_edge = [torch.LongTensor(o) for o in [train_edge, valid_edge, test_edge]]
     train_cp, valid_cp, test_cp = [torch.LongTensor(o) for o in [train[1], valid[1], test[1]]]
-    print(f"train_fea.shape: {train_fea.shape}, train_edge.shape: {train_edge.shape}, train_cp.shape: {train_cp.shape}")
+    print(f"train_edge.shape: {train_edge.shape}")
+    print(f"val_edge.shape: {valid_edge.shape}")
+    print(f"tt_edge.shape: {test_edge.shape}")
 
     # Exclude self edges by selecting off diag index
     off_diag_idx = np.ravel_multi_index(
@@ -190,6 +192,8 @@ def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
     valid_edge = valid_edge[:, :, off_diag_idx]
     test_edge = test_edge[:, :, off_diag_idx]
     print(f"train_fea.shape: {train_fea.shape}, train_edge.shape: {train_edge.shape}, train_cp.shape: {train_cp.shape}")
+    print(f"val_fea.shape: {valid_fea.shape}, val_edge.shape: {valid_edge.shape}, val_cp.shape: {valid_cp.shape}")
+    print(f"tt_fea.shape: {test_fea.shape}, tt_edge.shape: {test_edge.shape}, tt_cp.shape: {test_cp.shape}")
     print("!"*100)
 
     train_data = TensorDataset(train_fea, train_edge, train_cp)

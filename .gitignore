@@ -4,3 +4,5 @@ data/cp_loc/
 data/cp_vel/
 data/ywt_cp_change/
 __pycache__/
+exp/
+log.txt

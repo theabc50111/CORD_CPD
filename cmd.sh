@@ -18,11 +18,14 @@ if [ $ywt_data == "false" ];
 then
     CUDA_VISIBLE_DEVICES=${GPU} python main.py --mode $mode --data_path data/cp_change \
                                                --spatial-encoding-layer gnn --temporal-encoding-layer rnn \
+                                               --epochs 200 --eval_epoch 5 \
                                                --exp_dir exp/${exp_name}_rnn_gnn
 else
     CUDA_VISIBLE_DEVICES=${GPU} python main.py --mode $mode --data_path data/ywt_cp_change \
                                                --spatial-encoding-layer gnn --temporal-encoding-layer rnn \
                                                --exp_dir exp/${exp_name}_rnn_gnn \
+                                               --batch-size 12 \
+                                               --epochs 200 --eval_epoch 5 \
                                                --dims 1  --num-atoms 66 --timesteps 10
 fi
 

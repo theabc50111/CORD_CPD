@@ -55,7 +55,8 @@ def roc_score(res, cpd, metric=roc_score_onehot, burn_in=25, w=None):
 
 # average distance and triangle utility for evaluation
 def top_one_anomaly(res, burn_in=25):
-    return burn_in + np.argmax(res[..., burn_in:-burn_in], axis=-1)
+    #return burn_in + np.argmax(res[..., burn_in:-burn_in], axis=-1)
+    return burn_in + np.argmax(res[..., burn_in:-burn_in-1], axis=-1)
 
 def avg_distance(res, cpd, burn_in=25):
     pred = top_one_anomaly(res, burn_in)
@@ -111,6 +112,8 @@ def cpd_metrics(output, cpd, anomaly_input=False, tri_w=15, roc_w=1, burn_in=25)
         res = output
     else:
         res = cal_cp_from_output(output, cal_cp_continuous)
+    print(f"res.shape: {res.shape}, cpd.shape: {cpd.shape}")
+    print("!"*100)
     avg_dist = avg_distance(res, cpd, burn_in=burn_in)
     avg_tri = avg_triangle_utility(res, cpd, w=tri_w, burn_in=burn_in)
     avg_roc = roc_score(res, cpd, burn_in=burn_in, w=roc_w)

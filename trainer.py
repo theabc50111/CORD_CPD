@@ -134,7 +134,8 @@ class Trainer(object):
 
             loss = loss_mse + loss_delta
             if self.data_type == "sim":
-                acc = edge_accuracy(logits, relations, begin_steps=5, end_steps=-5)
+                #acc = edge_accuracy(logits, relations, begin_steps=5, end_steps=-5)
+                acc = edge_accuracy(logits, relations)
                 acc_train.append(acc)
             else:
                 acc_train.append(np.nan)
@@ -180,7 +181,8 @@ class Trainer(object):
             loss_mse = F.mse_loss(output, target) / (2 * self.args.var) * 400
 
             if self.data_type == 'sim':
-                acc = edge_accuracy(logits, relations, begin_steps=5, end_steps=-5)
+                #acc = edge_accuracy(logits, relations, begin_steps=5, end_steps=-5)
+                acc = edge_accuracy(logits, relations)
                 acc_val.append(acc)
             else:
                 origs.append(data.transpose(1, 2).contiguous().detach().cpu().numpy())
@@ -195,7 +197,9 @@ class Trainer(object):
 
         probs = torch.cat(probs).detach().cpu().numpy()
         cpds = np.array(cpds)
-        avg_roc, avg_dist, avg_tri = cpd_metrics(probs, cpds)
+        print("!"*100)
+        print(f"probs.shape: {probs.shape}, cpds.shape{cpds.shape}")
+        avg_roc, avg_dist, avg_tri = cpd_metrics(probs, cpds,  burn_in=0)
 
         if self.report_combine:
             recons = np.concatenate(recons)
