@@ -197,8 +197,6 @@ class Trainer(object):
 
         probs = torch.cat(probs).detach().cpu().numpy()
         cpds = np.array(cpds)
-        print("!"*100)
-        print(f"probs.shape: {probs.shape}, cpds.shape{cpds.shape}")
         avg_roc, avg_dist, avg_tri = cpd_metrics(probs, cpds,  burn_in=0)
 
         if self.report_combine:

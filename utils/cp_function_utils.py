@@ -112,8 +112,6 @@ def cpd_metrics(output, cpd, anomaly_input=False, tri_w=15, roc_w=1, burn_in=25)
         res = output
     else:
         res = cal_cp_from_output(output, cal_cp_continuous)
-    print(f"res.shape: {res.shape}, cpd.shape: {cpd.shape}")
-    print("!"*100)
     avg_dist = avg_distance(res, cpd, burn_in=burn_in)
     avg_tri = avg_triangle_utility(res, cpd, w=tri_w, burn_in=burn_in)
     avg_roc = roc_score(res, cpd, burn_in=burn_in, w=roc_w)
