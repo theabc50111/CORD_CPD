@@ -2,6 +2,7 @@ import numpy as np
 from itertools import combinations
 import logging
 from pathlib import Path
+import argparse
 
 
 logger = logging.getLogger(__name__)
@@ -72,15 +73,35 @@ def gen_cord_cpd_data(mats, idx_list, data_mode, retrieve_t_width=10):
 
 
 if __name__ == "__main__":
-    arr = np.load("../../correlation-change-predict/pipeline_dataset/sp500_20082017_corr_ser_reg_corr_mat_hrchy_11_cluster-train_train-graph_data/corr_s1_w10_graph.npy")
-    train_mats = arr[:int((len(arr)-1)*0.9)]
-    valid_mats = arr[int((len(arr)-1)*0.9):int((len(arr)-1)*0.95)]
-    test_mats = arr[int((len(arr)-1)*0.95):]
-    overlap_width = 20
-    time_len = 10
-    (_, tr_quan), (_, tr_idx_list) = find_non_overlap_idx(train_mats, half_overlap_width=int(overlap_width/2)).items()
-    (_, val_quan), (_, val_idx_list) = find_non_overlap_idx(valid_mats, half_overlap_width=int(overlap_width/2)).items()
-    (_, tt_quan), (_, tt_idx_list) = find_non_overlap_idx(test_mats, half_overlap_width=int(overlap_width/2)).items()
-    gen_cord_cpd_data(train_mats, tr_idx_list, retrieve_t_width=time_len, data_mode="train")
-    gen_cord_cpd_data(valid_mats, val_idx_list, retrieve_t_width=time_len, data_mode="valid")
-    gen_cord_cpd_data(test_mats, tt_idx_list, retrieve_t_width=time_len, data_mode="test")
+    convert_args_parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+    convert_args_parser.add_argument("--convert_ywt_data", type=bool, default=False, action=argparse.BooleanOptionalAction,  # setting of output files
+                                     help="input --convert_ywt_data to convert ywt graph data to the format of input of CORD_CPD")
+    convert_args_parser.add_argument("--convert_artif_data", type=bool, default=False, action=argparse.BooleanOptionalAction,  # setting of output files
+                                     help="input --convert_artif_data to convert artificial particle data to the format of input MTSCorrAD")
+    args = convert_args_parser.parse_args()
+    if args.convert_ywt_data:
+        arr = np.load("../../correlation-change-predict/pipeline_dataset/sp500_20082017_corr_ser_reg_corr_mat_hrchy_11_cluster-train_train-graph_data/corr_s1_w10_graph.npy")
+        train_mats = arr[:int((len(arr)-1)*0.9)]
+        valid_mats = arr[int((len(arr)-1)*0.9):int((len(arr)-1)*0.95)]
+        test_mats = arr[int((len(arr)-1)*0.95):]
+        overlap_width = 20
+        time_len = 10
+        (_, tr_quan), (_, tr_idx_list) = find_non_overlap_idx(train_mats, half_overlap_width=int(overlap_width/2)).items()
+        (_, val_quan), (_, val_idx_list) = find_non_overlap_idx(valid_mats, half_overlap_width=int(overlap_width/2)).items()
+        (_, tt_quan), (_, tt_idx_list) = find_non_overlap_idx(test_mats, half_overlap_width=int(overlap_width/2)).items()
+        gen_cord_cpd_data(train_mats, tr_idx_list, retrieve_t_width=time_len, data_mode="train")
+        gen_cord_cpd_data(valid_mats, val_idx_list, retrieve_t_width=time_len, data_mode="valid")
+        gen_cord_cpd_data(test_mats, tt_idx_list, retrieve_t_width=time_len, data_mode="test")
+    if args.convert_artif_data:
+        cord_ywt_train_fea_ar = np.load("./cord_cpd_ywt_data/ori_cord_cpd_data/cp_feature_train.npy")
+        cord_ywt_train_edges_ar = np.load("./cord_cpd_ywt_data/ori_cord_cpd_data/cp_edges_train.npy")
+        cord_ywt_train_cp_ar = np.load("./cord_cpd_ywt_data/ori_cord_cpd_data/cp_change_point_train.npy")
+        num_batchs = cord_ywt_train_fea_ar.shape[0]
+        time_len = cord_ywt_train_fea_ar.shape[2]
+        num_nodes = cord_ywt_train_fea_ar.shape[1]
+        num_features = cord_ywt_train_fea_ar.shape[3]
+        cord_ywt_train_edges_ar = cord_ywt_train_edges_ar.reshape(num_batchs*time_len, num_nodes, num_nodes)
+        np.save("./cord_cpd_ywt_data/artif_particle_adj_mat", cord_ywt_train_edges_ar)
+        logger.info(f"Converted artifical particle edges array shape: {cord_ywt_train_edges_ar.shape}")
+        logger.info(f"Time point of change point of no.1001 data: {cord_ywt_train_cp_ar[1001]}")
+        logger.info(f"Edges array during time point [48 ~ 52] of no. 1001 Converted artifical particle data: {cord_ywt_train_edges_ar[100148:100152]}")
