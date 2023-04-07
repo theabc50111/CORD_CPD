@@ -61,111 +61,33 @@ def make_edges(data, total_length, num_var):
     res = np.array(res)
     return res
 
-def load_file(path, suffix, mode='train'):
-    files = ['change_point', "edges1", "edges2"]
-    try:
-        fp = osp.join(path, "cp_feature_{}_{}.npy".format(mode, suffix))
-        feature = np.load(fp)
-    except:
-        # batch, time_steps, dim, num_var
-        loc = np.load(osp.join(path, "cp_loc_{}_{}.npy".format(mode, suffix)))
-        vel = np.load(osp.join(path, "cp_vel_{}_{}.npy".format(mode, suffix)))
-        feature = np.concatenate([loc, vel], axis=2)
-
-    res = [feature]
-    for f in files:
-        fp = osp.join(path, "cp_{}_{}_{}.npy".format(f, mode, suffix))
-        res.append(np.load(fp))
-    return res
-
-
-def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
-    modes = ["train", "valid", "test"]
-    # data [feature, change_point, edge1, edge2]
-    train, valid, test = [load_file(path, suffix, mode) for mode in modes]
-    print("!"*100)
-    print(f"cp_fea.shape: {train[0].shape}, cp.shape: {train[1].shape}, cp_edges1.shape: {train[2].shape}, cp_edges2.shape: {train[3].shape}")
-
-    # normalize feature
-    # train [feature, change_point, edges, edges2]
-    # train_fea [batch, time_step, dim, num_var]
-    if data_norm == 'min_max':
-        train_fea, valid_fea, test_fea = min_max_transform(train[0], valid[0], test[0])
-    else:
-        train_fea, valid_fea, test_fea = mean_std_transform(train[0], valid[0], test[0])
-    train_fea, valid_fea, test_fea = [o.transpose(0, 3, 1, 2) for o in [train_fea, valid_fea, test_fea]]
-    # train_fea [batch, num_var, time_steps, dim]
-
-    # process edge data to be edge connection per time step
-    batch, num_var, time_steps, dim = train_fea.shape
-    # train_edge [batch, time_step, num_edge]
-    train_edge = make_edges(train[1:], time_steps, num_var)
-    valid_edge = make_edges(valid[1:], time_steps, num_var)
-    test_edge = make_edges(test[1:], time_steps, num_var)
-
-    train_fea, valid_fea, test_fea = [torch.FloatTensor(o) for o in [train_fea, valid_fea, test_fea]]
-    train_edge, valid_edge, test_edge = [torch.LongTensor(o) for o in [train_edge, valid_edge, test_edge]]
-    train_cp, valid_cp, test_cp = [torch.LongTensor(o) for o in [train[1], valid[1], test[1]]]
-    print(f"train_edge.shape: {train_edge.shape}")
-    cur_dir = os.path.dirname(__file__)
-    cord_ywt_dir = os.path.join(cur_dir, "../data/cord_cpd_ywt_data/ori_cord_cpd_data")
-    if not os.path.exists(cord_ywt_dir):
-        os.makedirs(cord_ywt_dir, exist_ok=True)
-    np.save(f"{cord_ywt_dir}/cp_feature_train", train_fea); np.save(f"{cord_ywt_dir}/cp_edges_train", train_edge); np.save(f"{cord_ywt_dir}/cp_change_point_train",  train_cp)
-    np.save(f"{cord_ywt_dir}/cp_feature_valid", valid_fea); np.save(f"{cord_ywt_dir}/cp_edges_valid", valid_edge); np.save(f"{cord_ywt_dir}/cp_change_point_valid", valid_cp)
-    np.save(f"{cord_ywt_dir}/cp_feature_test", test_fea); np.save(f"{cord_ywt_dir}/cp_edges_test", test_edge); np.save(f"{cord_ywt_dir}/cp_change_point_test", test_cp)
-
-    # Exclude self edges by selecting off diag index
-    off_diag_idx = np.ravel_multi_index(
-        np.where(np.ones((num_var, num_var)) - np.eye(num_var)),
-        [num_var, num_var])
-    # train_edge [batch, time_step, num_non-self_edge]
-    train_edge = train_edge[:, :, off_diag_idx]
-    valid_edge = valid_edge[:, :, off_diag_idx]
-    test_edge = test_edge[:, :, off_diag_idx]
-    print(f"train_fea.shape: {train_fea.shape}, train_edge.shape: {train_edge.shape}, train_cp.shape: {train_cp.shape}")
-    print("!"*100)
-
-    train_data = TensorDataset(train_fea, train_edge, train_cp)
-    valid_data = TensorDataset(valid_fea, valid_edge, valid_cp)
-    test_data = TensorDataset(test_fea, test_edge, test_cp)
-
-    train_data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    valid_data_loader = DataLoader(valid_data, batch_size=batch_size)
-    test_data_loader = DataLoader(test_data, batch_size=batch_size)
-
-    return train_data_loader, valid_data_loader, test_data_loader
-
-
-#def load_file(path, mode='train'):
-#    files = ['change_point', "edges"]
+#def load_file(path, suffix, mode='train'):
+#    files = ['change_point', "edges1", "edges2"]
 #    try:
-#        fp = osp.join(path, "ywt_cp_feature_{}.npy".format(mode))
+#        fp = osp.join(path, "cp_feature_{}_{}.npy".format(mode, suffix))
 #        feature = np.load(fp)
 #    except:
 #        # batch, time_steps, dim, num_var
-#        loc = np.load(osp.join(path, "cp_loc_{}.npy".format(mode)))
-#        vel = np.load(osp.join(path, "cp_vel_{}.npy".format(mode)))
+#        loc = np.load(osp.join(path, "cp_loc_{}_{}.npy".format(mode, suffix)))
+#        vel = np.load(osp.join(path, "cp_vel_{}_{}.npy".format(mode, suffix)))
 #        feature = np.concatenate([loc, vel], axis=2)
 #
 #    res = [feature]
 #    for f in files:
-#        fp = osp.join(path, "ywt_cp_{}_{}.npy".format(f, mode))
+#        fp = osp.join(path, "cp_{}_{}_{}.npy".format(f, mode, suffix))
 #        res.append(np.load(fp))
 #    return res
 #
 #
 #def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
 #    modes = ["train", "valid", "test"]
-#    # data [feature, change_point, edge]
-#    train, valid, test = [load_file(path, mode) for mode in modes]
+#    # data [feature, change_point, edge1, edge2]
+#    train, valid, test = [load_file(path, suffix, mode) for mode in modes]
 #    print("!"*100)
-#    print(f"tr_cp_fea.shape: {train[0].shape}, tr_cp.shape: {train[1].shape}, tr_cp_edges.shape: {train[2].shape}")
-#    print(f"val_cp_fea.shape: {valid[0].shape}, val_cp.shape: {valid[1].shape}, val_cp_edges.shape: {valid[2].shape}")
-#    print(f"tt_cp_fea.shape: {test[0].shape}, t_cp.shape: {test[1].shape}, tt_cp_edges.shape: {test[2].shape}")
+#    print(f"cp_fea.shape: {train[0].shape}, cp.shape: {train[1].shape}, cp_edges1.shape: {train[2].shape}, cp_edges2.shape: {train[3].shape}")
 #
 #    # normalize feature
-#    # train [feature, change_point, edge]
+#    # train [feature, change_point, edges, edges2]
 #    # train_fea [batch, time_step, dim, num_var]
 #    if data_norm == 'min_max':
 #        train_fea, valid_fea, test_fea = min_max_transform(train[0], valid[0], test[0])
@@ -177,16 +99,21 @@ def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
 #    # process edge data to be edge connection per time step
 #    batch, num_var, time_steps, dim = train_fea.shape
 #    # train_edge [batch, time_step, num_edge]
-#    train_edge = train[2].reshape(-1, time_steps, num_var*num_var)
-#    valid_edge = valid[2].reshape(-1, time_steps, num_var*num_var)
-#    test_edge = test[2].reshape(-1, time_steps, num_var*num_var)
+#    train_edge = make_edges(train[1:], time_steps, num_var)
+#    valid_edge = make_edges(valid[1:], time_steps, num_var)
+#    test_edge = make_edges(test[1:], time_steps, num_var)
 #
 #    train_fea, valid_fea, test_fea = [torch.FloatTensor(o) for o in [train_fea, valid_fea, test_fea]]
 #    train_edge, valid_edge, test_edge = [torch.LongTensor(o) for o in [train_edge, valid_edge, test_edge]]
 #    train_cp, valid_cp, test_cp = [torch.LongTensor(o) for o in [train[1], valid[1], test[1]]]
 #    print(f"train_edge.shape: {train_edge.shape}")
-#    print(f"val_edge.shape: {valid_edge.shape}")
-#    print(f"tt_edge.shape: {test_edge.shape}")
+#    cur_dir = os.path.dirname(__file__)
+#    cord_ywt_dir = os.path.join(cur_dir, "../data/cord_cpd_ywt_data/ori_cord_cpd_data")
+#    if not os.path.exists(cord_ywt_dir):
+#        os.makedirs(cord_ywt_dir, exist_ok=True)
+#    np.save(f"{cord_ywt_dir}/cp_feature_train", train_fea); np.save(f"{cord_ywt_dir}/cp_edges_train", train_edge); np.save(f"{cord_ywt_dir}/cp_change_point_train",  train_cp)
+#    np.save(f"{cord_ywt_dir}/cp_feature_valid", valid_fea); np.save(f"{cord_ywt_dir}/cp_edges_valid", valid_edge); np.save(f"{cord_ywt_dir}/cp_change_point_valid", valid_cp)
+#    np.save(f"{cord_ywt_dir}/cp_feature_test", test_fea); np.save(f"{cord_ywt_dir}/cp_edges_test", test_edge); np.save(f"{cord_ywt_dir}/cp_change_point_test", test_cp)
 #
 #    # Exclude self edges by selecting off diag index
 #    off_diag_idx = np.ravel_multi_index(
@@ -197,8 +124,6 @@ def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
 #    valid_edge = valid_edge[:, :, off_diag_idx]
 #    test_edge = test_edge[:, :, off_diag_idx]
 #    print(f"train_fea.shape: {train_fea.shape}, train_edge.shape: {train_edge.shape}, train_cp.shape: {train_cp.shape}")
-#    print(f"val_fea.shape: {valid_fea.shape}, val_edge.shape: {valid_edge.shape}, val_cp.shape: {valid_cp.shape}")
-#    print(f"tt_fea.shape: {test_fea.shape}, tt_edge.shape: {test_edge.shape}, tt_cp.shape: {test_cp.shape}")
 #    print("!"*100)
 #
 #    train_data = TensorDataset(train_fea, train_edge, train_cp)
@@ -210,6 +135,81 @@ def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
 #    test_data_loader = DataLoader(test_data, batch_size=batch_size)
 #
 #    return train_data_loader, valid_data_loader, test_data_loader
+#
+
+def load_file(path, mode='train'):
+    files = ['change_point', "edges"]
+    try:
+        fp = osp.join(path, "ywt_cp_feature_{}.npy".format(mode))
+        feature = np.load(fp)
+    except:
+        # batch, time_steps, dim, num_var
+        loc = np.load(osp.join(path, "cp_loc_{}.npy".format(mode)))
+        vel = np.load(osp.join(path, "cp_vel_{}.npy".format(mode)))
+        feature = np.concatenate([loc, vel], axis=2)
+
+    res = [feature]
+    for f in files:
+        fp = osp.join(path, "ywt_cp_{}_{}.npy".format(f, mode))
+        res.append(np.load(fp))
+    return res
+
+
+def load_cp_data(path, batch_size=1, suffix='variable_5', data_norm="mean_std"):
+    modes = ["train", "valid", "test"]
+    # data [feature, change_point, edge]
+    train, valid, test = [load_file(path, mode) for mode in modes]
+    print("!"*100)
+    print(f"tr_cp_fea.shape: {train[0].shape}, tr_cp.shape: {train[1].shape}, tr_cp_edges.shape: {train[2].shape}")
+    print(f"val_cp_fea.shape: {valid[0].shape}, val_cp.shape: {valid[1].shape}, val_cp_edges.shape: {valid[2].shape}")
+    print(f"tt_cp_fea.shape: {test[0].shape}, t_cp.shape: {test[1].shape}, tt_cp_edges.shape: {test[2].shape}")
+
+    # normalize feature
+    # train [feature, change_point, edge]
+    # train_fea [batch, time_step, dim, num_var]
+    if data_norm == 'min_max':
+        train_fea, valid_fea, test_fea = min_max_transform(train[0], valid[0], test[0])
+    else:
+        train_fea, valid_fea, test_fea = mean_std_transform(train[0], valid[0], test[0])
+    train_fea, valid_fea, test_fea = [o.transpose(0, 3, 1, 2) for o in [train_fea, valid_fea, test_fea]]
+    # train_fea [batch, num_var, time_steps, dim]
+
+    # process edge data to be edge connection per time step
+    batch, num_var, time_steps, dim = train_fea.shape
+    # train_edge [batch, time_step, num_edge]
+    train_edge = train[2].reshape(-1, time_steps, num_var*num_var)
+    valid_edge = valid[2].reshape(-1, time_steps, num_var*num_var)
+    test_edge = test[2].reshape(-1, time_steps, num_var*num_var)
+
+    train_fea, valid_fea, test_fea = [torch.FloatTensor(o) for o in [train_fea, valid_fea, test_fea]]
+    train_edge, valid_edge, test_edge = [torch.LongTensor(o) for o in [train_edge, valid_edge, test_edge]]
+    train_cp, valid_cp, test_cp = [torch.LongTensor(o) for o in [train[1], valid[1], test[1]]]
+    print(f"train_edge.shape: {train_edge.shape}")
+    print(f"val_edge.shape: {valid_edge.shape}")
+    print(f"tt_edge.shape: {test_edge.shape}")
+
+    # Exclude self edges by selecting off diag index
+    off_diag_idx = np.ravel_multi_index(
+        np.where(np.ones((num_var, num_var)) - np.eye(num_var)),
+        [num_var, num_var])
+    # train_edge [batch, time_step, num_non-self_edge]
+    train_edge = train_edge[:, :, off_diag_idx]
+    valid_edge = valid_edge[:, :, off_diag_idx]
+    test_edge = test_edge[:, :, off_diag_idx]
+    print(f"train_fea.shape: {train_fea.shape}, train_edge.shape: {train_edge.shape}, train_cp.shape: {train_cp.shape}")
+    print(f"val_fea.shape: {valid_fea.shape}, val_edge.shape: {valid_edge.shape}, val_cp.shape: {valid_cp.shape}")
+    print(f"tt_fea.shape: {test_fea.shape}, tt_edge.shape: {test_edge.shape}, tt_cp.shape: {test_cp.shape}")
+    print("!"*100)
+
+    train_data = TensorDataset(train_fea, train_edge, train_cp)
+    valid_data = TensorDataset(valid_fea, valid_edge, valid_cp)
+    test_data = TensorDataset(test_fea, test_edge, test_cp)
+
+    train_data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    valid_data_loader = DataLoader(valid_data, batch_size=batch_size)
+    test_data_loader = DataLoader(test_data, batch_size=batch_size)
+
+    return train_data_loader, valid_data_loader, test_data_loader
 
 
 def norm_time_series(ts):

@@ -424,6 +424,8 @@ def nll_gaussian(preds, target, variance, add_const=False):
 
 def edge_accuracy(preds, target, begin_steps=0, end_steps=-1):
     _, preds = preds.max(-1)
+    print(f"preds.shape: {preds.shape}")
+    print(f"preds[0, 0, :5]:{preds[0, 0, :5]}")
     if(len(preds.size()) != len(target.size())):
         target = target.unsqueeze(1).expand_as(preds)
     # torch.set_printoptions(profile="full")

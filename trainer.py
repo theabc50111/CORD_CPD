@@ -118,7 +118,8 @@ class Trainer(object):
             logits = self.model.encode(data, self.rel_rec, self.rel_send)
             # loss_delta = 10000 * ((logits[:, :-1] - logits[:, 1:]) ** 2).mean()
             # logits [batch, timestep, edge, relation]
-            sub_logits = logits[:, 5:-5]
+            #sub_logits = logits[:, 5:-5]
+            sub_logits = logits[:, :]
             loss_delta = 100 * ((sub_logits[:, :-1] - sub_logits[:, 1:]) ** 2).mean()
             edges = F.gumbel_softmax(logits, tau=self.args.temp, hard=self.args.hard)
             # prob = F.softmax(logits, -1)
@@ -165,7 +166,8 @@ class Trainer(object):
             data = data[:, :, :self.args.timesteps, :]
 
             logits = self.model.encode(data, self.rel_rec, self.rel_send)
-            sub_logits = logits[:, 5:-5]
+            #sub_logits = logits[:, 5:-5]
+            sub_logits = logits[:, :]
             loss_delta = 100 * ((sub_logits[:, :-1] - sub_logits[:, 1:]) ** 2).mean()
             edges = F.gumbel_softmax(logits, tau=self.args.temp, hard=True)
             prob = F.softmax(logits, -1)

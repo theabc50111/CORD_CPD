@@ -38,7 +38,7 @@ def find_non_overlap_idx(mats, half_overlap_width=50):
             logger.debug(quan)
             logger.debug(over_threshold_idx_list)
             logger.debug("-"*50)
-        if len(non_overlap_indices) > 5 :
+        if len(non_overlap_indices) > 5:
             logger.debug(f"At quantile threshold: {quan}, number of over threshold index: {len(over_threshold_idx_list)}, number of overlap indices: {len(overlap_indices)}, number of non-overlap indices: {len(non_overlap_indices)}")
             logger.debug(f"non overlap indices: {non_overlap_indices}")
 
@@ -51,19 +51,23 @@ def gen_cord_cpd_data(mats, idx_list, data_mode, retrieve_t_width=10):
     retrieve_t_width = 10
     edges_mats_list = []
     labels_list = []
+
     for idx in idx_list:
         start_pos = np.random.randint(2, retrieve_t_width, size=1)[0]
         begin_idx = max(0, (idx - start_pos))
         end_idx = begin_idx + retrieve_t_width
-        label_idx = idx - begin_idx
-        logger.debug(f"original idx: {idx}, retrieve indices range: {begin_idx}~{end_idx}, label: {label_idx}")
-        edges_mats_list.append(mats[begin_idx:end_idx])
-        labels_list.append(label_idx)
+        if end_idx <= mats.shape[0]:
+            label_idx = idx - begin_idx
+            logger.debug(f"original idx: {idx}, retrieve indices range: {begin_idx}~{end_idx}, label: {label_idx}")
+            edges_mats_list.append(mats[begin_idx:end_idx])
+            labels_list.append(label_idx)
+
     labels_arr = np.array(labels_list)
     edges_mats = np.stack(edges_mats_list)
     feature_mats = np.ones(edges_mats.shape[:3])
     feature_mats = feature_mats[:, :, np.newaxis, :]
     logger.info(f"labels_arr.shape :{labels_arr.shape}, edges_mats.shape:{edges_mats.shape}, feature_mats.shape:{feature_mats.shape}")
+    logger.info(f"edges_mats[0, 0, 0, :10]:{edges_mats[0, 0, 0, :10]}")
     current_dir = Path(__file__).parent
     save_dir = current_dir / "ywt_cp_change"
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -76,11 +80,22 @@ if __name__ == "__main__":
     convert_args_parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     convert_args_parser.add_argument("--convert_ywt_data", type=bool, default=False, action=argparse.BooleanOptionalAction,  # setting of output files
                                      help="input --convert_ywt_data to convert ywt graph data to the format of input of CORD_CPD")
+    convert_args_parser.add_argument("--do_filt", type=bool, default=False, action=argparse.BooleanOptionalAction,  # setting of output files
+                                     help="input --do_filt to convert ywt graph data with filtering nan to 0, non-nan to 1")
     convert_args_parser.add_argument("--convert_artif_data", type=bool, default=False, action=argparse.BooleanOptionalAction,  # setting of output files
                                      help="input --convert_artif_data to convert artificial particle data to the format of input MTSCorrAD")
     args = convert_args_parser.parse_args()
     if args.convert_ywt_data:
-        arr = np.load("../../correlation-change-predict/pipeline_dataset/sp500_20082017_corr_ser_reg_corr_mat_hrchy_11_cluster-train_train-graph_data/corr_s1_w10_graph.npy")
+
+        if args.do_filt:
+            arr = np.load("../../correlation-change-predict/pipeline_dataset/sp500_20082017_corr_ser_reg_corr_mat_hrchy_11_cluster-train_train/filtered_graph_data/keep_strong-quan05/corr_s1_w10_adj_mat.npy")
+            # replace NaN with 0 and non-NaN with 1
+            arr[np.logical_not(np.isnan(arr))] = 1
+            arr[np.isnan(arr)] = 0
+        else:
+            arr = np.load("../../correlation-change-predict/pipeline_dataset/sp500_20082017_corr_ser_reg_corr_mat_hrchy_11_cluster-train_train/graph_data/corr_s1_w10_adj_mat.npy")
+
+        assert not np.isnan(arr).any(), "input array contains null values"
         train_mats = arr[:int((len(arr)-1)*0.9)]
         valid_mats = arr[int((len(arr)-1)*0.9):int((len(arr)-1)*0.95)]
         test_mats = arr[int((len(arr)-1)*0.95):]
@@ -92,6 +107,7 @@ if __name__ == "__main__":
         gen_cord_cpd_data(train_mats, tr_idx_list, retrieve_t_width=time_len, data_mode="train")
         gen_cord_cpd_data(valid_mats, val_idx_list, retrieve_t_width=time_len, data_mode="valid")
         gen_cord_cpd_data(test_mats, tt_idx_list, retrieve_t_width=time_len, data_mode="test")
+
     if args.convert_artif_data:
         cord_ywt_train_fea_ar = np.load("./cord_cpd_ywt_data/ori_cord_cpd_data/cp_feature_train.npy")
         cord_ywt_train_edges_ar = np.load("./cord_cpd_ywt_data/ori_cord_cpd_data/cp_edges_train.npy")
