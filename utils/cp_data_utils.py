@@ -135,7 +135,7 @@ def make_edges(data, total_length, num_var):
 #    test_data_loader = DataLoader(test_data, batch_size=batch_size)
 #
 #    return train_data_loader, valid_data_loader, test_data_loader
-#
+
 
 def load_file(path, mode='train'):
     files = ['change_point', "edges"]

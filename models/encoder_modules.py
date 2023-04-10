@@ -153,7 +153,6 @@ class CorrelationEncoder(nn.Module):
 
         x = self.mlp_in(x)  # 2-layer ELU net per node
 
-
         # temporal encoding
         if self.enc_temporal == 'transformer':
             x = self.transform_temporal(self.transformerEncoder1, self.posEncoder1, x, num_sims, num_timesteps, num_atoms, x.size(-1))
@@ -170,6 +169,7 @@ class CorrelationEncoder(nn.Module):
             x_skip = x
             x = self.edge2node(x, rel_rec, rel_send)
             x = self.mlp3(x)
+        sp_x = x.clone()
 
         # temporal encoding again
         if self.enc_temporal == 'transformer':
@@ -177,6 +177,8 @@ class CorrelationEncoder(nn.Module):
         else:
             x = self.RNN(self.gru2, x, num_sims, num_timesteps, num_atoms, x.size(-1))
 
+        temp_x = x.clone()
+        emb_loss = F.mse_loss(temp_x, sp_x)
 
         # output edge
         if self.enc_spatial == 'transformer':
@@ -192,4 +194,4 @@ class CorrelationEncoder(nn.Module):
         rel_type = rel_type.view([num_timesteps, num_sims, num_atoms * (num_atoms-1), -1])
         rel_type = rel_type.transpose(0, 1)
 
-        return rel_type
+        return rel_type, emb_loss

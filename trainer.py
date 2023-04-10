@@ -70,20 +70,22 @@ class Trainer(object):
 
         for epoch in range(self.args.epochs):
             t = time.time()
-            mse_train, delta_train, acc_train = self.train_one_epoch()
-            log_str_train = "Epoch: {:4d}, mse_train: {:.4f}, delta_train: {:.4f}, " \
-                      "acc_train: {:.4f}, epoch time: {:.2f}s".format(
-                epoch, mse_train, delta_train,
-                acc_train, time.time() - t
+            mse_train, delta_train, acc_train, emb_train = self.train_one_epoch()
+            log_str_train = "Epoch: {:05d}, mse_train: {:.4f}, delta_train: {:.4f}, " \
+                    "acc_train: {:.4f}, emb_train: {:.4f}, epoch time: {:.2f}s".format(
+                epoch, mse_train, delta_train, acc_train,
+                emb_train,
+                time.time() - t
             )
 
             log_str_eval = ""
             if (epoch+1) % self.args.eval_epoch == 0:
-                mse_val, delta_val, acc_val, avg_roc, avg_dist, avg_tri = self.evaluate()
+                mse_val, delta_val, acc_val, emb_val, avg_roc, avg_dist, avg_tri = self.evaluate()
 
-                log_str_eval = "|| mse_val: {:.4f}, delta_val: {:.4f}, acc_val: {:.4f}, " \
+                log_str_eval = "|| mse_val: {:.4f}, delta_val: {:.4f}, acc_val: {:.4f}, emb_val: {:.4f}, " \
                           "roc: {:.4f}, dist: {:.4f}, tri: {:.4f}, total time: {:.2f}s ||".format(
                     mse_val, delta_val, acc_val,
+                    emb_val,
                     avg_roc, avg_dist, avg_tri, time.time()-st
                 )
                 if mse_val < best_val_loss:
@@ -98,12 +100,13 @@ class Trainer(object):
             self.logging(log_str_train + log_str_eval)
 
         self.logging("Optimization Finished!")
-        self.logging("Best Epoch: {:04d}".format(best_epoch))
+        self.logging("Best Epoch: {:05d}".format(best_epoch))
 
     def train_one_epoch(self):
         acc_train = []
         mse_train = []
         delta_train = []
+        emb_train = []
 
         self.model.set_train()
         for batch_idx, (data, relations, cpd) in enumerate(self.train_loader):
@@ -115,7 +118,7 @@ class Trainer(object):
 
             self.model.optimizer.zero_grad()
 
-            logits = self.model.encode(data, self.rel_rec, self.rel_send)
+            logits, emb_loss = self.model.encode(data, self.rel_rec, self.rel_send)
             # loss_delta = 10000 * ((logits[:, :-1] - logits[:, 1:]) ** 2).mean()
             # logits [batch, timestep, edge, relation]
             #sub_logits = logits[:, 5:-5]
@@ -146,15 +149,17 @@ class Trainer(object):
 
             mse_train.append(loss_mse.item())
             delta_train.append(loss_delta.item())
+            emb_train.append(emb_loss.item())
         self.model.scheduler.step()
 
-        return np.mean(mse_train), np.mean(delta_train), np.mean(acc_train)
+        return np.mean(mse_train), np.mean(delta_train), np.mean(acc_train), np.mean(emb_train)
 
     @torch.no_grad()
     def evaluate(self):
         acc_val = []
         mse_val = []
         delta_val = []
+        emb_val = []
 
         self.model.set_eval()
         probs = []
@@ -165,7 +170,7 @@ class Trainer(object):
             data, relations = data.to(self.device), relations.to(self.device)
             data = data[:, :, :self.args.timesteps, :]
 
-            logits = self.model.encode(data, self.rel_rec, self.rel_send)
+            logits, emb_loss = self.model.encode(data, self.rel_rec, self.rel_send)
             #sub_logits = logits[:, 5:-5]
             sub_logits = logits[:, :]
             loss_delta = 100 * ((sub_logits[:, :-1] - sub_logits[:, 1:]) ** 2).mean()
@@ -196,6 +201,7 @@ class Trainer(object):
 
             mse_val.append(loss_mse.item())
             delta_val.append(loss_delta.item())
+            emb_val.append(emb_loss.item())
 
         probs = torch.cat(probs).detach().cpu().numpy()
         cpds = np.array(cpds)
@@ -214,4 +220,4 @@ class Trainer(object):
             self.logging("-" * 30)
 
         self.model.set_train()
-        return np.mean(mse_val), np.mean(delta_val), np.mean(acc_val), avg_roc, avg_dist, avg_tri
+        return np.mean(mse_val), np.mean(delta_val), np.mean(acc_val), np.mean(emb_val), avg_roc, avg_dist, avg_tri
