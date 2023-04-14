@@ -9,3 +9,4 @@ __pycache__/
 .ipynb_checkpoints
 exp/
 log.txt
+*.swp
