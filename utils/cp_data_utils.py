@@ -33,7 +33,7 @@ def mean_std_transform(train_fea, valid_fea, test_fea):
     u, s = np.zeros(num_feature), np.zeros(num_feature)
     for i in range(num_feature):
         u[i], s[i] = train_fea[:, :, i].mean(), train_fea[:, :, i].std()
-    print("mean std norm: ", u, s)
+    print(f"mean of norm for nodes' features:\n{u} \nstd  of norm for nodes' features:\n{s} ")
     if np.any(s == 0):
         print("std contains zero, so return original input")
         return train_fea, valid_fea, test_fea
