@@ -130,7 +130,7 @@ def plot_anomaly(lpred, ltrue, w=10, save_name=None):
     if save_name is not None:
         plt.savefig("fig/{}".format(save_name))
     plt.show()
-    
+
 def value_from_folder(model_path, mode='valid', data_type=None):
     print("files in exp: ", os.listdir(model_path))
     if data_type is None:
@@ -144,10 +144,10 @@ def value_from_folder(model_path, mode='valid', data_type=None):
     relations = dic["relations"]
     recons = dic["recons"]
     origs = dic["origs"]
-    
+
     correlation_score = cal_cp_from_output(probs, cal_cp_continuous)
     independent_score = mse_anomaly(recons, origs, step=5)
-    
+
     return (correlation_score, independent_score), (probs, cpds, relations, (origs, recons))
 
 # anomlay mse prediction

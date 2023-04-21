@@ -28,8 +28,8 @@ else
     CUDA_VISIBLE_DEVICES=${GPU} python main.py --mode $mode --data_path data/ywt_cp_change \
                                                --spatial-encoding-layer gnn --temporal-encoding-layer rnn \
                                                --exp_dir exp/ywt_stock/graph_nodes_v_mode_${graph_nodes_v_mode}/my_exp_${exp_name}_gnn_tra_mlp_${timestamp} \
-                                               --batch-size 12 \
-                                               --epochs 1000 --eval_epoch 5 \
+                                               --batch-size 3 \
+                                               --epochs 200 --eval_epoch 5 \
                                                --dims $nodes_v_dim  --num-atoms 66 --timesteps 10
 fi
 
