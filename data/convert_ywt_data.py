@@ -166,7 +166,7 @@ if __name__ == "__main__":
             (_, val_quan), (_, val_idx_list) = find_non_overlap_idx(valid_adj_mats, half_overlap_width=int(OVERLAP_WIDTH/2)).items()
             (_, tt_quan), (_, tt_idx_list) = find_non_overlap_idx(test_adj_mats, half_overlap_width=int(OVERLAP_WIDTH/2)).items()
         elif args.t_idx_mode == "overlap":
-            TIME_LEN = 10
+            TIME_LEN = 50
             PERCENT = 0.2
             tr_idx_list = find_top_diff_idx(train_adj_mats, quan=PERCENT)
             val_idx_list = find_top_diff_idx(valid_adj_mats, quan=PERCENT)

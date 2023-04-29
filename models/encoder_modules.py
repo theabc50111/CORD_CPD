@@ -153,11 +153,11 @@ class CorrelationEncoder(nn.Module):
 
         x = self.mlp_in(x)  # 2-layer ELU net per node
 
-        ## temporal encoding
-        #if self.enc_temporal == 'transformer':
-        #    x = self.transform_temporal(self.transformerEncoder1, self.posEncoder1, x, num_sims, num_timesteps, num_atoms, x.size(-1))
-        #else:
-        #    x = self.RNN(self.gru1, x, num_sims, num_timesteps, num_atoms, x.size(-1))
+        # temporal encoding
+        if self.enc_temporal == 'transformer':
+            x = self.transform_temporal(self.transformerEncoder1, self.posEncoder1, x, num_sims, num_timesteps, num_atoms, x.size(-1))
+        else:
+            x = self.RNN(self.gru1, x, num_sims, num_timesteps, num_atoms, x.size(-1))
 
 
         # spatial encoding
