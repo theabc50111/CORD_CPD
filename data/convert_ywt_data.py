@@ -144,16 +144,17 @@ if __name__ == "__main__":
     convert_args_parser.add_argument("--convert_artif_data", type=bool, default=False, action=argparse.BooleanOptionalAction,  # setting of output files
                                      help="input --convert_artif_data to convert artificial particle data to the format of input MTSCorrAD")
     args = convert_args_parser.parse_args()
+    dataset_dir = "../../correlation-change-predict/pipeline_dataset/sp500_20082017_corr_ser_reg_corr_mat_hrchy_11_cluster_label_last-train_train"
     if args.convert_ywt_data:
         if args.do_filt:
-            gra_edges_data_mats = np.load("../../correlation-change-predict/pipeline_dataset/sp500_20082017_corr_ser_reg_corr_mat_hrchy_11_cluster-train_train/filtered_graph_adj_mat/keep_strong-quan05/corr_s1_w10_adj_mat.npy")
+            gra_edges_data_mats = np.load(f"{dataset_dir}/filtered_graph_adj_mat/keep_positive-quan05/corr_s1_w10_adj_mat.npy")
             # replace NaN with 0 and non-NaN with 1
             gra_edges_data_mats[np.logical_not(np.isnan(gra_edges_data_mats))] = 1
             gra_edges_data_mats[np.isnan(gra_edges_data_mats)] = 0
         else:
-            gra_edges_data_mats = np.load("../../correlation-change-predict/pipeline_dataset/sp500_20082017_corr_ser_reg_corr_mat_hrchy_11_cluster-train_train/graph_data/corr_s1_w10_adj_mat.npy")
+            gra_edges_data_mats = np.load(f"{dataset_dir}/graph_adj_mat/corr_s1_w10_adj_mat.npy")
 
-        gra_nodes_data_mats = np.load(f"../../correlation-change-predict/pipeline_dataset/sp500_20082017_corr_ser_reg_corr_mat_hrchy_11_cluster-train_train/graph_node_mat/{nodes_mode}_s1_w10_nodes_mat.npy") if (nodes_mode := args.graph_nodes_v_mode) is not None else np.ones((gra_edges_data_mats.shape[0], 1, gra_edges_data_mats.shape[2]))
+        gra_nodes_data_mats = np.load(f"{dataset_dir}/graph_node_mat/{nodes_mode}_s1_w10_nodes_mat.npy") if (nodes_mode := args.graph_nodes_v_mode) is not None else np.ones((gra_edges_data_mats.shape[0], 1, gra_edges_data_mats.shape[2]))
 
         assert not np.isnan(gra_edges_data_mats).any(), "input adjacency matrices contains null values"
         train_adj_mats, train_nodes_mats = gra_edges_data_mats[:int((len(gra_edges_data_mats)-1)*0.9)], gra_nodes_data_mats[:int((len(gra_edges_data_mats)-1)*0.9)]
@@ -166,7 +167,7 @@ if __name__ == "__main__":
             (_, val_quan), (_, val_idx_list) = find_non_overlap_idx(valid_adj_mats, half_overlap_width=int(OVERLAP_WIDTH/2)).items()
             (_, tt_quan), (_, tt_idx_list) = find_non_overlap_idx(test_adj_mats, half_overlap_width=int(OVERLAP_WIDTH/2)).items()
         elif args.t_idx_mode == "overlap":
-            TIME_LEN = 50
+            TIME_LEN = 100
             PERCENT = 0.2
             tr_idx_list = find_top_diff_idx(train_adj_mats, quan=PERCENT)
             val_idx_list = find_top_diff_idx(valid_adj_mats, quan=PERCENT)

@@ -1,10 +1,13 @@
+import os
+import os.path as osp
+import sys
+
 import numpy as np
 import torch
-from torch.utils.data.dataset import TensorDataset
-from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from torch.autograd import Variable
-import os, sys, os.path as osp
+from torch.utils.data import DataLoader
+from torch.utils.data.dataset import TensorDataset
 
 eps = 1e-8
 

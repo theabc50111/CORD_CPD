@@ -1,7 +1,8 @@
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 
 _EPS = 1e-10
 
@@ -143,7 +144,7 @@ class MLPDecoder(nn.Module):
         for i in range(len(preds)):
             output[:, i::pred_steps, :, :] = preds[i]
 
-        pred_all = output[:, :(inputs.size(1) - 1), :, :]
+        pred_all = output[:, :(inputs.size(1) - 1), :, :]  # predict for t1~t100, but only need t1~t99
 
         return pred_all.transpose(1, 2).contiguous()
 

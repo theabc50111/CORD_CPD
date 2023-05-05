@@ -1,21 +1,21 @@
 import math
-import sys, os
+import os
 import os.path as osp
-import time
 import pickle
+import sys
+import time
 
 import numpy as np
-from tqdm import tqdm
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from utils.exp_utils import create_exp_dir
-from utils.utils import *
+from models import cord_cpd
+from tqdm import tqdm
 from utils.cp_data_utils import *
 from utils.cp_function_utils import *
-from models import cord_cpd
+from utils.exp_utils import create_exp_dir
+from utils.utils import *
+
 
 class Trainer(object):
     def __init__(self, args):
@@ -112,6 +112,7 @@ class Trainer(object):
         for batch_idx, (data, relations, cpd) in enumerate(self.train_loader):
 
             data, relations = data.to(self.device), relations.to(self.device)
+            relations = torch.zeros(relations.shape).to(self.device)
             # data [batch_size, num_atoms, num_timesteps, num_dims]
 
             data = data[:, :, :self.args.timesteps, :]
@@ -135,7 +136,6 @@ class Trainer(object):
             output = output[:, :, self.args.begin_steps:, :]
 
             loss_mse = F.mse_loss(output, target) / (2 * self.args.var) * 400
-
             loss = loss_mse + loss_delta
             if self.data_type == "sim":
                 #acc = edge_accuracy(logits, relations, begin_steps=5, end_steps=-5)
@@ -168,6 +168,7 @@ class Trainer(object):
         origs = []
         for batch_idx, (data, relations, cpd) in enumerate(self.valid_loader):
             data, relations = data.to(self.device), relations.to(self.device)
+            relations = torch.zeros(relations.shape).to(self.device)
             data = data[:, :, :self.args.timesteps, :]
 
             logits, emb_loss = self.model.encode(data, self.rel_rec, self.rel_send)
@@ -205,7 +206,7 @@ class Trainer(object):
 
         probs = torch.cat(probs).detach().cpu().numpy()
         cpds = np.array(cpds)
-        avg_roc, avg_dist, avg_tri = cpd_metrics(probs, cpds,  burn_in=0)
+        avg_roc, avg_dist, avg_tri = cpd_metrics(probs, cpds,  burn_in=0, tri_w=int(0.15 * self.args.timesteps))
 
         if self.report_combine:
             recons = np.concatenate(recons)
